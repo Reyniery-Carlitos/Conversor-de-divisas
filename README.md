@@ -14,6 +14,7 @@ Aplicacion realizada en el lenguaje de programacion python sobre la conversion d
 ## ESTRUCTURA DE CARPETAS 📎
 ---
 
+```
 |--- classes
 |      |--- ConvertCurrency.py
 |      |--- CurrencyUI.py
@@ -30,6 +31,7 @@ Aplicacion realizada en el lenguaje de programacion python sobre la conversion d
 |      |--- 3.png
 |      |--- 4.png
 |--- main.py
+```
 
 ## SCREENSHOTS 📌
 ---
