@@ -40,6 +40,8 @@ Aplicacion realizada en el lenguaje de programacion python sobre la conversion d
 ![Segunda imagen del diseño de la app](/images/2.png)
 ![Tercera imagen del diseño de la app](/images/3.png)
 ![Cuarta imagen del diseño de la app](/images/4.png)
+![Quinta imagen del diseño de la app](/images/5.png)
+![Sexta imagen del diseño de la app](/images/6.png)
 
 ## TECNOLOGIAS 🔥
 ---

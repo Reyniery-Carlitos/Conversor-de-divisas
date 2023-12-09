@@ -1,24 +1,28 @@
-import datetime
-from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, QLineEdit, QComboBox, QLabel
+from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, QLineEdit, QComboBox, QLabel, QPushButton, QFileDialog
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import matplotlib.pyplot as plt
+from lark import UnexpectedInput
 
 from helpers.conversionRates import conversionRates
 from helpers.exchangeRate import exchangeRate
 from helpers.dates import dates
-from styles.CurrencyAppStyles import currencyTextStyle, currencyText2Style, inputLineEditStyle, currencyComboStyle
+from styles.CurrencyAppStyles import currencyTextStyle, currencyText2Style, inputLineEditStyle, currencyComboStyle, resultLabelStyle
 
 from classes.ConvertCurrency import convertCurrency
 
 class CurrencyUI(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle('Convertidor de Divisas')
+        self.setWindowTitle('CONVERSOR DE DIVISAS')
         self.setGeometry(100, 100, 780, 280)
 
         self.centralWidget = QWidget(self)
         self.setCentralWidget(self.centralWidget)
         self.setStyleSheet('background-color: #202124')
+
+        # Boton de carga de archivos
+        self.uploadButton = QPushButton('Subir archivo', self)
+        self.uploadButton.clicked.connect(self.showFileDialog)
         
         # LAYOUTS
         mainLayout = QVBoxLayout()
@@ -27,37 +31,42 @@ class CurrencyUI(QMainWindow):
         layoutFrom = QHBoxLayout()
         layoutTo = QHBoxLayout()
         layoutText = QHBoxLayout()
+        layoutUploadButton = QHBoxLayout()
 
         self.currencyText = QLabel('1 Dolar estadounidense es igual a')
         self.currencyText2 = QLabel('1 Dolar estadounidense')
         
         # Sección del gráfico y el select de moneda
-        self.chartCanvas = FigureCanvas(plt.figure(figsize=(5, 5), facecolor='#202124', edgecolor='#81C995'))
+        self.chartCanvas = FigureCanvas(plt.figure(figsize=(5, 7), facecolor='#202124', edgecolor='#81C995'))
 
         self.currencyCombo = QComboBox()
         self.currencyCombo.addItems([conversionRate for conversionRate in conversionRates.keys()])
-        self.currencyCombo.currentIndexChanged.connect(self.update_chart)
+        self.currencyCombo.currentIndexChanged.connect(self.updateChart)
 
         self.currencyCombo.currentIndexChanged.connect(self.changeCurrencyCombo)
 
         self.toCurrencyComboChart = QComboBox()
         self.toCurrencyComboChart.addItems([conversionRate for conversionRate in conversionRates.keys()])
-        self.toCurrencyComboChart.currentIndexChanged.connect(self.update_chart)
+        self.toCurrencyComboChart.currentIndexChanged.connect(self.updateChart)
         
         self.toCurrencyComboChart.currentIndexChanged.connect(self.changeCurrencyComboChart)
 
         # INPUT TEXT
         self.inputLineEdit = QLineEdit()
         self.inputLineEdit2 = QLineEdit()
+
+        # INPUT TEXT DE SOLO LECTURA
+        self.inputLineEdit2.setReadOnly(True)
         
         self.resultLabel = QLabel()
         
-        self.inputLineEdit.textChanged.connect(self.show_text)
+        self.inputLineEdit.textChanged.connect(self.showResult)
 
         # AGREGANDO ESTILOS A LOS WIDGETS Y LAYOUTS
         # LABELS
         self.currencyText.setStyleSheet(currencyTextStyle)
         self.currencyText2.setStyleSheet(currencyText2Style)
+        self.resultLabel.setStyleSheet(resultLabelStyle)
 
         # INPUTS
         self.inputLineEdit.setStyleSheet(inputLineEditStyle)
@@ -66,6 +75,9 @@ class CurrencyUI(QMainWindow):
         # COMBOBOX
         self.currencyCombo.setStyleSheet(currencyComboStyle)
         self.toCurrencyComboChart.setStyleSheet(currencyComboStyle)
+
+        # QFileDialog
+        self.uploadButton.setStyleSheet('color: white')
 
         # AGREGANDO WIDGETS Y LAYOUTS A LAYOUTS 
         layoutFrom.addWidget(self.inputLineEdit)
@@ -82,9 +94,12 @@ class CurrencyUI(QMainWindow):
         layout.addLayout(layoutCurrency)
         layout.addWidget(self.chartCanvas)
 
+        layoutUploadButton.addWidget(self.uploadButton)
+
         mainLayout.addLayout(layoutText)
         mainLayout.addLayout(layout)
         mainLayout.addWidget(self.resultLabel)
+        mainLayout.addLayout(layoutUploadButton)
 
         self.centralWidget.setLayout(mainLayout)
 
@@ -94,7 +109,31 @@ class CurrencyUI(QMainWindow):
         # TASAS DE INTERCAMBIO
         self.currencyValues = exchangeRate
 
-        self.update_chart()
+        self.updateChart()
+
+    def showFileDialog(self):
+        options = QFileDialog.Options()
+        fileName, _ = QFileDialog.getOpenFileName(self, 'Seleccionar un archivo', '', 'Archivos de texto (*.txt);;Todos los archivos (*)', options = options)
+
+        if fileName:
+            self.resultLabel.setText('Archivo cargado exitosamente: Resultados en el archivo resultTxt.txt')
+            self.resultLabel.setStyleSheet('color: #61DC00; font-size: 16px; font-weight: bold')
+            archivoTxt = open(fileName, 'r')
+            resultTxt = open('resultTxt.txt', 'w')
+            resultTxt.write('---------- RESULTADOS CONVERSIONES ---------- \n')
+
+            for i in archivoTxt.read().split('\n'):
+                try:
+                    result = convertCurrency(i)        
+                    resultToWrite = str(round(float(result.pretty().split()[-1]), 3))
+                    resultTxt.write(f'{i} = {resultToWrite} {i.split(' ')[-1]} \n')
+
+                except UnexpectedInput as e:
+                    resultTxt.write('Entrada no válida \n')
+                    print(f'Ocurrio un error durante el analisis sintactico: {e}')
+                    continue
+
+            archivoTxt.close()
 
     def changeCurrencyCombo(self):
         currencyComboValue = self.currencyCombo.currentText()
@@ -112,29 +151,41 @@ class CurrencyUI(QMainWindow):
         self.currencyText2.setText(f'{conversion} {conversionRates[toCurrencyComboChartValue]["currency"]}')
         self.inputLineEdit.setText('')
 
-    def show_text(self):
+    def showResult(self):
         inputText = self.inputLineEdit.text()
         try:
             result = ''
             if(inputText == ''):
-              result = convertCurrency(f'0 {self.currencyCombo.currentText()} to {self.toCurrencyComboChart.currentText()}')  
+                result = convertCurrency(f'0 {self.currencyCombo.currentText()} to {self.toCurrencyComboChart.currentText()}')  
+                print(f'----- ARBOL SINTACTICO ----- \n {result.pretty().center(28)}')
+            
+                resultToShow = str(round(float(result.pretty().split()[-1]), 3))
+                self.inputLineEdit2.setText(resultToShow)
+                self.resultLabel.setText('')
             else:
-              result = convertCurrency(f'{inputText} {self.currencyCombo.currentText()} to {self.toCurrencyComboChart.currentText()}')  
-            
-            print(result.pretty)
-            
-            resultToShow = str(round(float(result.pretty().split()[-1]), 3))
-            self.inputLineEdit2.setText(resultToShow)
+                try:
+                    result = convertCurrency(f'{inputText} {self.currencyCombo.currentText()} to {self.toCurrencyComboChart.currentText()}')    
+                
+                    print(f'----- ARBOL SINTACTICO ----- \n {result.pretty().center(28)}')
+
+                    resultToShow = str(round(float(result.pretty().split()[-1]), 3))
+                    self.inputLineEdit2.setText(resultToShow)
+                    self.resultLabel.setText('')
+
+                except UnexpectedInput as e:
+                    self.resultLabel.setStyleSheet('color: red; font-size: 16px; font-weight: bold')
+                    self.resultLabel.setText('WARNING: Valor no valido ingresado')
+                    self.inputLineEdit2.setText('')
+                    print(f'Ocurrio un error durante el analisis sintactico: {e}')
 
         except Exception as e:
             print(f'Ocurrio un error al procesar la expresion: {e}')
             self.resultLabel.hasSelectedText('Error al procesar la expresion')
  
-    def update_chart(self):
+    # METODO PARA LA ACTUALIZACION DEL GRAFICO
+    def updateChart(self):
         selectedCurrency = self.currencyCombo.currentText()
         toCurrency = self.toCurrencyComboChart.currentText()
-
-        # rate = conversionRates[selectedCurrency]["exchange"][toCurrency]
 
         # VALORES DE LA TASA DE CAMBIO
         values = [value for value in self.currencyValues[selectedCurrency]['exchange'][toCurrency]]

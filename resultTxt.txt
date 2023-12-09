@@ -1,0 +1,13 @@
+---------- RESULTADOS CONVERSIONES ---------- 
+10 USD to EUR = 9.3 EUR 
+20 EUR to lps = 533.6 lps 
+25.2 ars TO JPY = 10.08 JPY 
+Entrada no válida 
+Entrada no válida 
+40 LPS a USD = 1.6 USD 
+23.50 JPY A GBP = 0.129 GBP 
+Entrada no válida 
+56.788 CAD in mxn = 727.454 mxn 
+0.27 jpy en jpy = 0.27 jpy 
+57 cad EN GBP = 33.06 GBP 
+100.0 USD IN EUR = 93.0 EUR 

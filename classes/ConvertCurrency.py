@@ -11,7 +11,7 @@ class ConvertCurrency(Transformer):
         toCurrency = items[2].upper()
         rate = conversionRates[fromCurrency]['exchange'][toCurrency]
         convertedAmount = amount * rate
-        tree = Tree('conversion', [Tree('amount', [amount]), Tree('fromCurrency', [fromCurrency]), Tree('toCurrency', [toCurrency]), Tree('convertedAmount', [convertedAmount])])
+        tree = Tree('CONVERSION', [Tree('CANTIDAD:'.center(15), [amount]), Tree('ORIGEN:'.center(15), [fromCurrency]), Tree('DESTINO:'.center(15), [toCurrency]), Tree('RESULTADO:'.center(15), [convertedAmount])])
         return tree
 
 conversionParser = Lark(conversionGrammar, parser='lalr', transformer=ConvertCurrency())
